@@ -1,5 +1,0 @@
-Some game ideas:
-
-Bullet hell
-- Player character that can move around
-- Enemies that shoot projectiles
