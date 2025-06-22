@@ -72,13 +72,13 @@ public class Game extends JFrame implements KeyListener {
             keyMap.put(i, false);
         }
 
-        try {
-            for (String s : images) {
-                imageMap.put(s, ImageIO.read(new File(s + ".png")));
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+//        try {
+//            for (String s : images) {
+//                imageMap.put(s, ImageIO.read(new File(s + ".png")));
+//            }
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
 
         gamePanel = new JPanel() {
             @Override
