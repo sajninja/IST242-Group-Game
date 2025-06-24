@@ -7,6 +7,11 @@ public class Vector2 {
         this.y = y;
     }
 
+    public Vector2(double input) {
+        this.x = input;
+        this.y = input;
+    }
+
     public double magnitude() {
         return Math.sqrt(x * x + y * y);
     }

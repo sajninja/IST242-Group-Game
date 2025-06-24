@@ -21,4 +21,8 @@ public class Projectile extends GameObject{
     public void setFriendly(boolean input) {
         friendly = input;
     }
+
+//    Make homing bullets
+//    Every tick, add a little velocity towards the player
+//    Normalize the vector afterwards
 }

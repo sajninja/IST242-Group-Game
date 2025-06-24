@@ -14,8 +14,8 @@ import java.util.Random;
 public class Game extends JFrame implements KeyListener {
 
 //    Utility
-    private static final int WIDTH = 1000;
-    private static final int HEIGHT = 750;
+    public static final int WIDTH = 1000;
+    public static final int HEIGHT = 750;
     private final JPanel gamePanel;
     public static final Random random = new Random();
 
@@ -58,13 +58,13 @@ public class Game extends JFrame implements KeyListener {
         player = new Player(new Vector2(WIDTH / 2, HEIGHT / 2));
         player.setVelocity(new Vector2(0, 0));
 
-        Enemy enemy = new EnemyBasic(new Vector2(WIDTH / 2, HEIGHT / 2 - 250), player);
+        Enemy enemy = new Enemy(EnemyType.BASIC, new Vector2(WIDTH / 2, HEIGHT / 2 - 250), player);
         nonPlayerObjects.add(enemy);
 
-        enemy = new EnemyBasic(new Vector2(WIDTH / 2 - 100, HEIGHT / 2 - 250), player);
+        enemy = new Enemy(EnemyType.BASIC, new Vector2(WIDTH / 2 - 100, HEIGHT / 2 - 250), player);
         nonPlayerObjects.add(enemy);
 
-        enemy = new EnemyBasic(new Vector2(WIDTH / 2 + 100, HEIGHT / 2 - 250), player);
+        enemy = new Enemy(EnemyType.BASIC, new Vector2(WIDTH / 2 + 100, HEIGHT / 2 - 250), player);
         nonPlayerObjects.add(enemy);
 
 //        Initialize key map
@@ -121,21 +121,18 @@ public class Game extends JFrame implements KeyListener {
 
     void draw(Graphics g) {
         g.setColor(new Color(16, 72, 137));
-        g.fillOval((int) player.getPosition().getX(), (int) player.getPosition().getY(), 20, 20);
+        g.fillOval(WIDTH / 2 - 10, HEIGHT / 2 - 10, 20, 20);
 
         for (GameObject o : nonPlayerObjects) {
             if (o instanceof Enemy) {
                 g.setColor(new Color(176, 13, 51));
-                g.fillOval((int) o.getPosition().getX(), (int) o.getPosition().getY(), 20, 20);
-            } else if (o instanceof Projectile) {
-                g.setColor(((Projectile) o).getColor());
-                g.fillOval((int) o.getPosition().getX(), (int) o.getPosition().getY(), 5, 5);
+                g.fillOval((int) (o.getPosition().getX() - player.getPosition().getX()), (int) (o.getPosition().getY() - player.getPosition().getY()), 20, 20);
             }
         }
 
         for (Projectile p : projectiles) {
             g.setColor(p.getColor());
-            g.fillOval((int) p.getPosition().getX(), (int) p.getPosition().getY(), 7, 7);
+            g.fillOval((int) (p.getPosition().getX() - player.getPosition().getX()), (int) (p.getPosition().getY() - player.getPosition().getY()), 7, 7);
         }
 
         g.setColor(new Color(16, 72, 137));
@@ -160,11 +157,15 @@ public class Game extends JFrame implements KeyListener {
         if (player.getVelocity().magnitude() > 7.5) {
             player.getVelocity().normalize(7.5);
         }
+//        Change the player's position in the world
         player.setPosition(new Vector2(player.getPosition().getX() + player.getVelocity().getX(), player.getPosition().getY() + player.getVelocity().getY()));
-        player.getVelocity().scale(0.5);
+        player.getVelocity().scale(0.85);
 
         for (GameObject o : nonPlayerObjects) {
             if (o instanceof Enemy) {
+//              Change its position on the screen
+//                o.setScreenPosition(new Vector2(o.getPosition().getX() - player.getPosition().getX(), o.getPosition().getY() - player.getPosition().getY()));
+//                Nothing yet to change its position in the world...
                 if (((Enemy) o).getActionTimer() == 0) {
                     ((Enemy) o).act();
                     for (Projectile p : ((Enemy) o).shootProjectile()) {
@@ -177,8 +178,29 @@ public class Game extends JFrame implements KeyListener {
             }
         }
 
-        for (Projectile p : projectiles) {
+        for (int i = 0; i < projectiles.size(); i++) {
+            Projectile p = projectiles.get(i);
+            if (!p.isFriendly()) {
+                double distanceToPlayer = new Vector2(p.getPosition().getX() - (player.getTruePosition().getX()), p.getPosition().getY() - (player.getTruePosition().getY())).magnitude();
+                if (distanceToPlayer < 20) {
+                    projectiles.remove(p);
+                    i--;
+                }
+            } else {
+                for (int j = 0; j < nonPlayerObjects.size(); j++) {
+                    GameObject o = nonPlayerObjects.get(j);
+                    if (o instanceof Enemy) {
+                        double distanceToEnemy = new Vector2(p.getPosition().getX() - (o.getPosition().getX()), p.getPosition().getY() - (o.getPosition().getY())).magnitude();
+//                        Use a value here for enemies with different sizes
+                        if (distanceToEnemy < 20) {
+                            projectiles.remove(p);
+                            i--;
+                        }
+                    }
+                }
+            }
             p.setPosition(new Vector2(p.getPosition().getX() + p.getVelocity().getX(), p.getPosition().getY() + p.getVelocity().getY()));
+//            Add something here to cull projectiles that have gone too far
         }
     }
 
@@ -200,12 +222,17 @@ public class Game extends JFrame implements KeyListener {
     }
 
     public void mousePress(MouseEvent e) {
-        Projectile projectile = new Projectile(5, new Color(0, 150, 200), true);
-        projectile.setPosition(player.getPosition());
-        projectile.setVelocity(Vector2.AtoB(new Vector2(e.getX(), e.getY()), player.getPosition()));
-        projectile.setVelocity(new Vector2(projectile.getVelocity().getX() + player.getVelocity().getX(), projectile.getVelocity().getY() + player.getVelocity().getY()));
-        projectile.getVelocity().normalize(8);
-        projectile.setFriendly(true);
-        projectiles.add(projectile);
+//        for (int i = 0; i < random.nextInt(2) + 1; i++) {
+            Projectile projectile = new Projectile(5, new Color(0, 150, 200), true);
+            projectile.setPosition(player.getTruePosition());
+            projectile.setVelocity(Vector2.AtoB(new Vector2(e.getX(), e.getY()), new Vector2((double) WIDTH / 2, (double) HEIGHT / 2)));
+            int inAccuracy = 20;
+            projectile.setVelocity(Vector2.add(projectile.getVelocity(), new Vector2(random.nextDouble(inAccuracy) - (double) inAccuracy / 2)));
+//            projectile.getVelocity().normalize(random.nextDouble(1) + 7);
+            projectile.getVelocity().normalize(8);
+            projectile.setVelocity(Vector2.add(projectile.getVelocity(), player.getVelocity()));
+            projectile.setFriendly(true);
+            projectiles.add(projectile);
+//        }
     }
 }
