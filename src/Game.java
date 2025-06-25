@@ -20,17 +20,8 @@ public class Game extends JFrame implements KeyListener {
 //    Media
     private Map<String, Image> imageMap = new HashMap<>();
     String[] images = new String[] {
-            "player", "monster"
+            "wizardSprite", "monsterSprite"
     };
-
-    public void loadImages() {
-        try {
-            imageMap.put("monster", ImageIO.read(new File("monsterSprite.png")));
-            imageMap.put("player", ImageIO.read(new File("wizardSprite.png")));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 //    Keys
     private Map<Integer, Boolean> keyMap = new HashMap<>();
 
@@ -85,6 +76,7 @@ public class Game extends JFrame implements KeyListener {
             keyMap.put(i, false);
         }
 
+//        Loads assets into the image map
         try {
             for (String s : images) {
                 imageMap.put(s, ImageIO.read(new File("assets/" + s + ".png")));
