@@ -11,28 +11,37 @@ import java.util.Random;
 
 public class Game extends JFrame implements KeyListener {
 
-    //    Utility
+//    Utility
     public static final int WIDTH = 1000;
     public static final int HEIGHT = 750;
     private final JPanel gamePanel;
     public static final Random random = new Random();
 
-    //    Media
+//    Media
     private Map<String, Image> imageMap = new HashMap<>();
     String[] images = new String[] {
-            "wizardSprite", "monsterSprite"
+            "player", "monster"
     };
-    //    Keys
+
+    public void loadImages() {
+        try {
+            imageMap.put("monster", ImageIO.read(new File("monsterSprite.png")));
+            imageMap.put("player", ImageIO.read(new File("wizardSprite.png")));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+//    Keys
     private Map<Integer, Boolean> keyMap = new HashMap<>();
 
-    //    Objects
+//    Objects
     public ArrayList<GameObject> nonPlayerObjects;
     public ArrayList<Projectile> projectiles;
     public static Player player;
 
     public Point crosshair = new Point();
 
-    //    This value needs to be even or it won't look right
+//    This value needs to be even or it won't look right
     private static final int strokeLength = 8;
 
     public static void main(String[] args) {
@@ -49,6 +58,8 @@ public class Game extends JFrame implements KeyListener {
         setSize(WIDTH, HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
+
+        loadImages();
 
 //        Initialize lists
         nonPlayerObjects = new ArrayList<>();
@@ -74,7 +85,6 @@ public class Game extends JFrame implements KeyListener {
             keyMap.put(i, false);
         }
 
-//        Loads assets into the image map
         try {
             for (String s : images) {
                 imageMap.put(s, ImageIO.read(new File("assets/" + s + ".png")));
@@ -120,7 +130,7 @@ public class Game extends JFrame implements KeyListener {
         gamePanel.setFocusable(true);
         gamePanel.addKeyListener(this);
     }
-    //Patrick Jin
+
     void draw(Graphics g) {
         g.setColor(darkened(Color.green));
         g.fillRect(WIDTH / 2 - player.getHealth() / 2 - strokeLength / 2, HEIGHT / 2 - (int) player.getSize().getY() - strokeLength / 2 - 5, player.getHealth() + strokeLength, 8 + strokeLength);
@@ -148,7 +158,7 @@ public class Game extends JFrame implements KeyListener {
             );
         }
 //        g.fillOval((int) (player.getTruePosition().getX()), (int) (player.getTruePosition().getY()), 20, 20);
-        //Patrick Jin
+
         for (GameObject o : nonPlayerObjects) {
             if (o instanceof Enemy) {
                 Image img = imageMap.get("monsterSprite");
@@ -199,7 +209,7 @@ public class Game extends JFrame implements KeyListener {
         }
     }
 
-    //    A neat pair of methods that handle some vector operations for drawing
+//    A neat pair of methods that handle some vector operations for drawing
     int considerPlayerX(Vector2 input) {
         return (int) (input.getX() - player.getPosition().getX());
     }
@@ -246,7 +256,6 @@ public class Game extends JFrame implements KeyListener {
                 double distanceToPlayer = new Vector2(p.getPosition().getX() - (player.getTruePosition().getX()), p.getPosition().getY() - (player.getTruePosition().getY())).magnitude();
                 if (distanceToPlayer < player.getSize().magnitude() * 0.65) {
                     player.hit(p);
-                    playSound("playerDamage.wav");
                     if (player.getHealth() < 0) {
                         player.setSize(0);
                     }
@@ -261,7 +270,6 @@ public class Game extends JFrame implements KeyListener {
 //                        Use a value here for enemies with different sizes
                         if (distanceToEnemy < o.getSize().magnitude() * 0.8) {
                             ((Enemy) o).hit(p);
-                            playSound("monsterPain.wav");
                             if (((Enemy) o).getHealth() <= 0) {
                                 nonPlayerObjects.remove(o);
                                 j--;
@@ -301,36 +309,20 @@ public class Game extends JFrame implements KeyListener {
         int keyCode = e.getKeyCode();
         keyMap.put(keyCode, false);
     }
-    //Patrick Jin
-    private void playSound(String filename) {
-        try {
-            File soundFile = new File("assets/" + filename);
-            javax.sound.sampled.AudioInputStream audioIn = javax.sound.sampled.AudioSystem.getAudioInputStream(soundFile);
-            javax.sound.sampled.Clip clip = javax.sound.sampled.AudioSystem.getClip();
-            clip.open(audioIn);
-            clip.start();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     public void mousePress(MouseEvent e) {
 //        for (int i = 0; i < random.nextInt(2) + 1; i++) {
-        Projectile projectile = new Projectile(5, new Color(0, 150, 200), true);
-        projectile.setPosition(player.getTruePosition());
-        projectile.setSize(10);
-        projectile.setVelocity(Vector2.AtoB(new Vector2(e.getX(), e.getY()), new Vector2((double) WIDTH / 2, (double) HEIGHT / 2)));
-        int inAccuracy = 20;
-        projectile.setVelocity(Vector2.add(projectile.getVelocity(), new Vector2(random.nextDouble(inAccuracy) - (double) inAccuracy / 2)));
+            Projectile projectile = new Projectile(5, new Color(0, 150, 200), true);
+            projectile.setPosition(player.getTruePosition());
+            projectile.setSize(10);
+            projectile.setVelocity(Vector2.AtoB(new Vector2(e.getX(), e.getY()), new Vector2((double) WIDTH / 2, (double) HEIGHT / 2)));
+            int inAccuracy = 20;
+            projectile.setVelocity(Vector2.add(projectile.getVelocity(), new Vector2(random.nextDouble(inAccuracy) - (double) inAccuracy / 2)));
 //            projectile.getVelocity().normalize(random.nextDouble(1) + 7);
-        projectile.getVelocity().normalize(12);
+            projectile.getVelocity().normalize(12);
 //            projectile.setVelocity(Vector2.add(projectile.getVelocity(), player.getVelocity()));
-        projectile.setFriendly(true);
-        projectiles.add(projectile);
-        //Patrick Jin
-        playSound("laserSound.wav");
-
-
+            projectile.setFriendly(true);
+            projectiles.add(projectile);
 //        }
     }
 }
