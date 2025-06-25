@@ -1,6 +1,9 @@
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,9 +20,17 @@ public class Game extends JFrame implements KeyListener {
 //    Media
     private Map<String, Image> imageMap = new HashMap<>();
     String[] images = new String[] {
-            "player"
+            "player", "monster"
     };
 
+    public void loadImages() {
+        try {
+            imageMap.put("monster", ImageIO.read(new File("monsterSprite.png")));
+            imageMap.put("player", ImageIO.read(new File("wizardSprite.png")));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 //    Keys
     private Map<Integer, Boolean> keyMap = new HashMap<>();
 
@@ -48,6 +59,8 @@ public class Game extends JFrame implements KeyListener {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
 
+        loadImages();
+
 //        Initialize lists
         nonPlayerObjects = new ArrayList<>();
         projectiles = new ArrayList<>();
@@ -72,13 +85,12 @@ public class Game extends JFrame implements KeyListener {
             keyMap.put(i, false);
         }
 
-//        try {
-//            for (String s : images) {
-//                imageMap.put(s, ImageIO.read(new File(s + ".png")));
-//            }
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
+        try {
+            for (String s : images) {
+                imageMap.put(s, ImageIO.read(new File("assets/" + s + ".png")));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);        }
 
         gamePanel = new JPanel() {
             @Override
@@ -127,19 +139,52 @@ public class Game extends JFrame implements KeyListener {
         g.setColor(darkened(new Color(16, 72, 137)));
         g.fillOval((int) ((double) WIDTH / 2 - player.getSize().getX() / 2) - strokeLength / 2, (int) ((double) HEIGHT / 2 - player.getSize().getY() / 2) - strokeLength / 2, (int) player.getSize().getX() + strokeLength, (int) player.getSize().getY() + strokeLength);
         g.setColor(new Color(16, 72, 137));
-        g.fillOval((int) ((double) WIDTH / 2 - player.getSize().getX() / 2), (int) ((double) HEIGHT / 2 - player.getSize().getY() / 2), (int) player.getSize().getX(), (int) player.getSize().getY());
+        Image playerImg = imageMap.get("wizardSprite");
+        if (playerImg != null) {
+            g.drawImage(playerImg,
+                    WIDTH / 2 - (int) player.getSize().getX() / 2,
+                    HEIGHT / 2 - (int) player.getSize().getY() / 2,
+                    (int) player.getSize().getX(),
+                    (int) player.getSize().getY(),
+                    null);
+        } else {
+            // fallback: original oval if image is missing
+            g.setColor(new Color(16, 72, 137));
+            g.fillOval(
+                    WIDTH / 2 - (int) player.getSize().getX() / 2,
+                    HEIGHT / 2 - (int) player.getSize().getY() / 2,
+                    (int) player.getSize().getX(),
+                    (int) player.getSize().getY()
+            );
+        }
 //        g.fillOval((int) (player.getTruePosition().getX()), (int) (player.getTruePosition().getY()), 20, 20);
 
         for (GameObject o : nonPlayerObjects) {
             if (o instanceof Enemy) {
-                g.setColor(darkened(new Color(176, 13, 51)));
-                g.fillOval((considerPlayerX(o.getPosition())) - (int) o.getSize().getX() / 2 - strokeLength / 2, (considerPlayerY(o.getPosition())) - (int) o.getSize().getY() / 2 - strokeLength / 2, (int) o.getSize().getX() + strokeLength, (int) o.getSize().getY() + strokeLength);
-                g.setColor(new Color(176, 13, 51));
-                g.fillOval((considerPlayerX(o.getPosition())) - (int) o.getSize().getX() / 2, (considerPlayerY(o.getPosition())) - (int) o.getSize().getY() / 2, (int) o.getSize().getX(), (int) o.getSize().getY());
+                Image img = imageMap.get("monsterSprite");
+
+                int x = considerPlayerX(o.getPosition()) - (int) o.getSize().getX() / 2;
+                int y = considerPlayerY(o.getPosition()) - (int) o.getSize().getY() / 2;
+                int w = (int) o.getSize().getX();
+                int h = (int) o.getSize().getY();
+
+                if (img != null) {
+                    g.drawImage(img, x, y, w, h, null);
+                } else {
+                    g.setColor(darkened(new Color(176, 13, 51)));
+                    g.fillOval(x - strokeLength / 2, y - strokeLength / 2, w + strokeLength, h + strokeLength);
+                    g.setColor(new Color(176, 13, 51));
+                    g.fillOval(x, y, w, h);
+                }
+
+                // health bar
+                int health = ((Enemy) o).getHealth();
+                int healthBarX = x + w / 2 - health / 2;
+                int healthBarY = y - 10;
                 g.setColor(darkened(Color.red));
-                g.fillRect(considerPlayerX(o.getPosition()) - ((Enemy) o).getHealth() / 2 - strokeLength / 2, considerPlayerY(o.getPosition()) - (int) o.getSize().getY() - strokeLength / 2 - 5, ((Enemy) o).getHealth() + strokeLength, 8 + strokeLength);
+                g.fillRect(healthBarX - strokeLength / 2, healthBarY - strokeLength / 2, health + strokeLength, 8 + strokeLength);
                 g.setColor(Color.red);
-                g.fillRect(considerPlayerX(o.getPosition()) - ((Enemy) o).getHealth() / 2, considerPlayerY(o.getPosition()) - (int) o.getSize().getY() - 5, ((Enemy) o).getHealth(), 8);
+                g.fillRect(healthBarX, healthBarY, health, 8);
             }
         }
 
@@ -183,6 +228,8 @@ public class Game extends JFrame implements KeyListener {
             player.getVelocity().normalize(7.5);
         }
 //        Change the player's position in the world
+
+
         player.setPosition(new Vector2(player.getPosition().getX() + player.getVelocity().getX(), player.getPosition().getY() + player.getVelocity().getY()));
         player.getVelocity().scale(0.85);
 
