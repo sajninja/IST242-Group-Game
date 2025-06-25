@@ -23,7 +23,7 @@ public class MoveAction extends Action {
     }
 
     @Override
-    public boolean doAction() {
+    public void doAction() {
         return false;
     }
 
