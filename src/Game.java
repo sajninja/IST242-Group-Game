@@ -239,8 +239,11 @@ public class Game extends JFrame implements KeyListener {
 //                o.setScreenPosition(new Vector2(o.getPosition().getX() - player.getPosition().getX(), o.getPosition().getY() - player.getPosition().getY()));
 //                Nothing yet to change its position in the world...
                 if (((Enemy) o).getShootTimer().getTime() == 0) {
-                    ((Enemy) o).act();
-                    for (Projectile p : ((Enemy) o).shootProjectile()) {
+//                    ((Enemy) o).act();
+                    ArrayList<ShootAction> actions = new ArrayList<>(((Enemy) o).getShootActions());
+                    int actionIndex = weightedDraw(actions);
+                    ShootAction action = actions.get(actionIndex);
+                    for (Projectile p : action.shootProjectile(o.getPosition())) {
                         projectiles.add(p);
                     }
                     ((Enemy) o).getShootTimer().reset();
