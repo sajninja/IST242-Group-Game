@@ -18,9 +18,12 @@ public class Game extends JFrame implements KeyListener {
     public static final Random random = new Random();
 
 //    Media
+private Image backgroundImg;
+
     private Map<String, Image> imageMap = new HashMap<>();
     String[] images = new String[] {
             "wizardSprite", "monsterSprite"
+
     };
 //    Keys
     private Map<Integer, Boolean> keyMap = new HashMap<>();
@@ -32,7 +35,7 @@ public class Game extends JFrame implements KeyListener {
 
     public Point crosshair = new Point();
 
-//    This value needs to be even or it won't look right
+//    This value needs to be even, or it won't look right
     private static final int strokeLength = 8;
 
     public static void main(String[] args) {
@@ -44,13 +47,14 @@ public class Game extends JFrame implements KeyListener {
         });
     }
 
+
     public Game() {
         setTitle("Game");
         setSize(WIDTH, HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
 
-        loadImages();
+        //loadImages();
 
 //        Initialize lists
         nonPlayerObjects = new ArrayList<>();
@@ -72,6 +76,14 @@ public class Game extends JFrame implements KeyListener {
         nonPlayerObjects.add(enemy);
 
 //        Initialize key map
+        try {
+            backgroundImg = ImageIO.read(getClass().getResource("/assets/background.png"));
+        } catch (IOException | IllegalArgumentException e) {
+            System.out.println("Background image not found!");
+            e.printStackTrace();
+        }
+
+
         for (int i = 0; i < 255; i++) {
             keyMap.put(i, false);
         }
@@ -124,6 +136,9 @@ public class Game extends JFrame implements KeyListener {
     }
 
     void draw(Graphics g) {
+        if (backgroundImg != null) {
+            g.drawImage(backgroundImg, 0, 0, WIDTH, HEIGHT, null);
+        }
         g.setColor(darkened(Color.green));
         g.fillRect(WIDTH / 2 - player.getHealth() / 2 - strokeLength / 2, HEIGHT / 2 - (int) player.getSize().getY() - strokeLength / 2 - 5, player.getHealth() + strokeLength, 8 + strokeLength);
         g.setColor(Color.green);
@@ -149,6 +164,7 @@ public class Game extends JFrame implements KeyListener {
                     (int) player.getSize().getY()
             );
         }
+
 //        g.fillOval((int) (player.getTruePosition().getX()), (int) (player.getTruePosition().getY()), 20, 20);
 
         for (GameObject o : nonPlayerObjects) {
@@ -301,6 +317,7 @@ public class Game extends JFrame implements KeyListener {
         int keyCode = e.getKeyCode();
         keyMap.put(keyCode, false);
     }
+
 
     public void mousePress(MouseEvent e) {
 //        for (int i = 0; i < random.nextInt(2) + 1; i++) {

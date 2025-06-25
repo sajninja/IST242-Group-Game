@@ -8,7 +8,7 @@
 public abstract class Action {
     private int weight;
     public abstract boolean checkCondition();
-    public abstract void doAction();
+    public abstract boolean doAction();
     public int getWeight() { return weight; };
     public void setWeight(int input) { weight = input; };
 }
