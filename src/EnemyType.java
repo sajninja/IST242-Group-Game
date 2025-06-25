@@ -1,3 +1,10 @@
+/*
+ * Karis Jones
+ * EnemyType
+ * This class sets a list of possible enemy types.
+ * An enemy's type determines what set of attributes they will have.
+ */
+
 public enum EnemyType {
     BASIC,
     STRONG,

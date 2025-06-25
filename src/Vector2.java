@@ -1,3 +1,10 @@
+/*
+ * Karis Jones
+ * Vector2
+ * This class creates an object that stores two doubles.
+ * 2D vectors can be used to represent position, velocity, and size. Also includes a few vector operation methods
+ */
+
 public class Vector2 {
     private double x;
     private double y;
@@ -57,5 +64,9 @@ public class Vector2 {
 
     public static Vector2 add(Vector2 A, Vector2 B) {
         return new Vector2(A.getX() + B.getX(), A.getY() + B.getY());
+    }
+
+    public static Vector2 subtract(Vector2 A, Vector2 B) {
+        return new Vector2(A.getX() - B.getX(), A.getY() - B.getY());
     }
 }

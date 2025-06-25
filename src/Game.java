@@ -1,11 +1,6 @@
-import javax.imageio.ImageIO;
-import javax.sound.sampled.*;
 import javax.swing.*;
-import javax.xml.crypto.dsig.keyinfo.KeyValue;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +30,9 @@ public class Game extends JFrame implements KeyListener {
 
     public Point crosshair = new Point();
 
+//    This value needs to be even or it won't look right
+    private static final int strokeLength = 8;
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
@@ -57,8 +55,10 @@ public class Game extends JFrame implements KeyListener {
 //        Create objects
         player = new Player(new Vector2(WIDTH / 2, HEIGHT / 2));
         player.setVelocity(new Vector2(0, 0));
+        player.setSize(30);
+        player.setHealth(100);
 
-        Enemy enemy = new Enemy(EnemyType.BASIC, new Vector2(WIDTH / 2, HEIGHT / 2 - 250), player);
+        Enemy enemy = new Enemy(EnemyType.STRONG, new Vector2(WIDTH / 2, HEIGHT / 2), player);
         nonPlayerObjects.add(enemy);
 
         enemy = new Enemy(EnemyType.BASIC, new Vector2(WIDTH / 2 - 100, HEIGHT / 2 - 250), player);
@@ -120,19 +120,35 @@ public class Game extends JFrame implements KeyListener {
     }
 
     void draw(Graphics g) {
+        g.setColor(darkened(Color.green));
+        g.fillRect(WIDTH / 2 - player.getHealth() / 2 - strokeLength / 2, HEIGHT / 2 - (int) player.getSize().getY() - strokeLength / 2 - 5, player.getHealth() + strokeLength, 8 + strokeLength);
+        g.setColor(Color.green);
+        g.fillRect(WIDTH / 2 - player.getHealth() / 2, HEIGHT / 2 - (int) player.getSize().getY() - 5, player.getHealth(), 8);
+        g.setColor(darkened(new Color(16, 72, 137)));
+        g.fillOval((int) ((double) WIDTH / 2 - player.getSize().getX() / 2) - strokeLength / 2, (int) ((double) HEIGHT / 2 - player.getSize().getY() / 2) - strokeLength / 2, (int) player.getSize().getX() + strokeLength, (int) player.getSize().getY() + strokeLength);
         g.setColor(new Color(16, 72, 137));
-        g.fillOval(WIDTH / 2 - 10, HEIGHT / 2 - 10, 20, 20);
+        g.fillOval((int) ((double) WIDTH / 2 - player.getSize().getX() / 2), (int) ((double) HEIGHT / 2 - player.getSize().getY() / 2), (int) player.getSize().getX(), (int) player.getSize().getY());
+//        g.fillOval((int) (player.getTruePosition().getX()), (int) (player.getTruePosition().getY()), 20, 20);
 
         for (GameObject o : nonPlayerObjects) {
             if (o instanceof Enemy) {
+                g.setColor(darkened(new Color(176, 13, 51)));
+                g.fillOval((considerPlayerX(o.getPosition())) - (int) o.getSize().getX() / 2 - strokeLength / 2, (considerPlayerY(o.getPosition())) - (int) o.getSize().getY() / 2 - strokeLength / 2, (int) o.getSize().getX() + strokeLength, (int) o.getSize().getY() + strokeLength);
                 g.setColor(new Color(176, 13, 51));
-                g.fillOval((int) (o.getPosition().getX() - player.getPosition().getX()), (int) (o.getPosition().getY() - player.getPosition().getY()), 20, 20);
+                g.fillOval((considerPlayerX(o.getPosition())) - (int) o.getSize().getX() / 2, (considerPlayerY(o.getPosition())) - (int) o.getSize().getY() / 2, (int) o.getSize().getX(), (int) o.getSize().getY());
+                g.setColor(darkened(Color.red));
+                g.fillRect(considerPlayerX(o.getPosition()) - ((Enemy) o).getHealth() / 2 - strokeLength / 2, considerPlayerY(o.getPosition()) - (int) o.getSize().getY() - strokeLength / 2 - 5, ((Enemy) o).getHealth() + strokeLength, 8 + strokeLength);
+                g.setColor(Color.red);
+                g.fillRect(considerPlayerX(o.getPosition()) - ((Enemy) o).getHealth() / 2, considerPlayerY(o.getPosition()) - (int) o.getSize().getY() - 5, ((Enemy) o).getHealth(), 8);
             }
         }
 
         for (Projectile p : projectiles) {
+            g.setColor(darkened(p.getColor()));
+            g.fillOval(considerPlayerX(p.getPosition()) - (int) p.getSize().getX() / 2 - strokeLength / 2, considerPlayerY(p.getPosition()) - (int) p.getSize().getY() / 2 - strokeLength / 2, (int) p.getSize().getX() + strokeLength, (int) p.getSize().getY() + strokeLength);
             g.setColor(p.getColor());
-            g.fillOval((int) (p.getPosition().getX() - player.getPosition().getX()), (int) (p.getPosition().getY() - player.getPosition().getY()), 7, 7);
+            g.fillOval(considerPlayerX(p.getPosition()) - (int) p.getSize().getX() / 2, considerPlayerY(p.getPosition()) - (int) p.getSize().getY() / 2, (int) p.getSize().getX(), (int) p.getSize().getY());
+//            g.fillOval((int) (p.getPosition().getX() - player.getPosition().getX()), (int) (p.getPosition().getY() - player.getPosition().getY()), 7, 7);
         }
 
         g.setColor(new Color(16, 72, 137));
@@ -143,9 +159,18 @@ public class Game extends JFrame implements KeyListener {
 //            if (distance.magnitude() > 100) {
 //                crosshairPos.sc
 //            }
-            g.fillRect(crosshair.x - 10, crosshair.y - 1, 20, 2);
-            g.fillRect(crosshair.x - 1, crosshair.y - 10, 2, 20);
+//            g.fillRect(crosshair.x - 10, crosshair.y - 1, 20, 2);
+//            g.fillRect(crosshair.x - 1, crosshair.y - 10, 2, 20);
         }
+    }
+
+//    A neat pair of methods that handle some vector operations for drawing
+    int considerPlayerX(Vector2 input) {
+        return (int) (input.getX() - player.getPosition().getX());
+    }
+
+    int considerPlayerY(Vector2 input) {
+        return (int) (input.getY() - player.getPosition().getY());
     }
 
     void update() {
@@ -166,14 +191,14 @@ public class Game extends JFrame implements KeyListener {
 //              Change its position on the screen
 //                o.setScreenPosition(new Vector2(o.getPosition().getX() - player.getPosition().getX(), o.getPosition().getY() - player.getPosition().getY()));
 //                Nothing yet to change its position in the world...
-                if (((Enemy) o).getActionTimer() == 0) {
+                if (((Enemy) o).getShootTimer().getTime() == 0) {
                     ((Enemy) o).act();
                     for (Projectile p : ((Enemy) o).shootProjectile()) {
                         projectiles.add(p);
                     }
-                    ((Enemy) o).resetActionTimer();
+                    ((Enemy) o).getShootTimer().reset();
                 } else {
-                    ((Enemy) o).setActionTimer(((Enemy) o).getActionTimer() - 1);
+                    ((Enemy) o).getShootTimer().setTime(((Enemy) o).getShootTimer().getTime() - 1);
                 }
             }
         }
@@ -182,7 +207,11 @@ public class Game extends JFrame implements KeyListener {
             Projectile p = projectiles.get(i);
             if (!p.isFriendly()) {
                 double distanceToPlayer = new Vector2(p.getPosition().getX() - (player.getTruePosition().getX()), p.getPosition().getY() - (player.getTruePosition().getY())).magnitude();
-                if (distanceToPlayer < 20) {
+                if (distanceToPlayer < player.getSize().magnitude() * 0.65) {
+                    player.hit(p);
+                    if (player.getHealth() < 0) {
+                        player.setSize(0);
+                    }
                     projectiles.remove(p);
                     i--;
                 }
@@ -192,7 +221,12 @@ public class Game extends JFrame implements KeyListener {
                     if (o instanceof Enemy) {
                         double distanceToEnemy = new Vector2(p.getPosition().getX() - (o.getPosition().getX()), p.getPosition().getY() - (o.getPosition().getY())).magnitude();
 //                        Use a value here for enemies with different sizes
-                        if (distanceToEnemy < 20) {
+                        if (distanceToEnemy < o.getSize().magnitude() * 0.8) {
+                            ((Enemy) o).hit(p);
+                            if (((Enemy) o).getHealth() <= 0) {
+                                nonPlayerObjects.remove(o);
+                                j--;
+                            }
                             projectiles.remove(p);
                             i--;
                         }
@@ -202,6 +236,14 @@ public class Game extends JFrame implements KeyListener {
             p.setPosition(new Vector2(p.getPosition().getX() + p.getVelocity().getX(), p.getPosition().getY() + p.getVelocity().getY()));
 //            Add something here to cull projectiles that have gone too far
         }
+    }
+
+    Color darkened(Color input) {
+        double scale = 1.75;
+        int r = (int) (input.getRed() / scale);
+        int g = (int) (input.getGreen() / scale);
+        int b = (int) (input.getBlue() / scale);
+        return new Color(r, g, b);
     }
 
     @Override
@@ -225,14 +267,22 @@ public class Game extends JFrame implements KeyListener {
 //        for (int i = 0; i < random.nextInt(2) + 1; i++) {
             Projectile projectile = new Projectile(5, new Color(0, 150, 200), true);
             projectile.setPosition(player.getTruePosition());
+            projectile.setSize(10);
             projectile.setVelocity(Vector2.AtoB(new Vector2(e.getX(), e.getY()), new Vector2((double) WIDTH / 2, (double) HEIGHT / 2)));
             int inAccuracy = 20;
             projectile.setVelocity(Vector2.add(projectile.getVelocity(), new Vector2(random.nextDouble(inAccuracy) - (double) inAccuracy / 2)));
 //            projectile.getVelocity().normalize(random.nextDouble(1) + 7);
-            projectile.getVelocity().normalize(8);
-            projectile.setVelocity(Vector2.add(projectile.getVelocity(), player.getVelocity()));
+            projectile.getVelocity().normalize(12);
+//            projectile.setVelocity(Vector2.add(projectile.getVelocity(), player.getVelocity()));
             projectile.setFriendly(true);
             projectiles.add(projectile);
 //        }
     }
 }
+
+
+/*
+ *
+ *
+ *
+ */

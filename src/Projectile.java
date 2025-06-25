@@ -1,6 +1,13 @@
+/*
+ * Karis Jones
+ * Projectile
+ * This class creates a projectile object
+ * Projectiles are non-living entities that are created by living entities. They can be set as friendly, meaning they won't damage the player.
+ */
+
 import java.awt.*;
 
-public class Projectile extends GameObject{
+public class Projectile extends GameObject {
     int damage;
     Color color;
     boolean friendly;
@@ -8,6 +15,7 @@ public class Projectile extends GameObject{
         this.damage = damage;
         this.color = color;
         this.friendly = friendly;
+        setSize(new Vector2(damage));
     }
 
     public Color getColor() {
