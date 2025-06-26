@@ -23,9 +23,7 @@ public class MoveAction extends Action {
     }
 
     @Override
-    public boolean doAction() {
-        return false;
-    }
+    public void doAction() {};
 
     public void setTarget(Vector2 input) {
         targetPosition = input;

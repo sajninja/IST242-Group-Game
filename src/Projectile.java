@@ -11,11 +11,22 @@ public class Projectile extends GameObject {
     int damage;
     Color color;
     boolean friendly;
-    public Projectile(int damage, Color color, boolean friendly) {
+    int speed;
+
+    public Projectile(int damage, Color color, boolean friendly, int speed, int size) {
         this.damage = damage;
         this.color = color;
         this.friendly = friendly;
-        setSize(new Vector2(damage));
+        setSize(size);
+        this.speed = speed;
+    }
+
+    public Projectile(Projectile input) {
+        this.damage = input.damage;
+        this.color = input.color;
+        this.friendly = input.friendly;
+        setSize(input.getSize());
+        this.speed = input.speed;
     }
 
     public Color getColor() {

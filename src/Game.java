@@ -11,37 +11,31 @@ import java.util.Random;
 
 public class Game extends JFrame implements KeyListener {
 
-//    Utility
+    //    Utility
     public static final int WIDTH = 1000;
     public static final int HEIGHT = 750;
     private final JPanel gamePanel;
     public static final Random random = new Random();
 
-//    Media
+    //    Media
     private Map<String, Image> imageMap = new HashMap<>();
     String[] images = new String[] {
-            "player", "monster"
+            "wizardSprite",
+            "monsterSprite",
+            "background"
     };
 
-    public void loadImages() {
-        try {
-            imageMap.put("monster", ImageIO.read(new File("monsterSprite.png")));
-            imageMap.put("player", ImageIO.read(new File("wizardSprite.png")));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-//    Keys
+    //    Keys
     private Map<Integer, Boolean> keyMap = new HashMap<>();
 
-//    Objects
+    //    Objects
     public ArrayList<GameObject> nonPlayerObjects;
     public ArrayList<Projectile> projectiles;
     public static Player player;
 
     public Point crosshair = new Point();
 
-//    This value needs to be even or it won't look right
+    //    This value needs to be even, or it won't look right
     private static final int strokeLength = 8;
 
     public static void main(String[] args) {
@@ -59,7 +53,7 @@ public class Game extends JFrame implements KeyListener {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
 
-        loadImages();
+        //loadImages();
 
 //        Initialize lists
         nonPlayerObjects = new ArrayList<>();
@@ -85,12 +79,16 @@ public class Game extends JFrame implements KeyListener {
             keyMap.put(i, false);
         }
 
+//        Loads assets into the image map
+//        Prepare images by adding the filename to the string[] images
+//        Load images by doing imageMap.get(the name of the file)
         try {
             for (String s : images) {
                 imageMap.put(s, ImageIO.read(new File("assets/" + s + ".png")));
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);        }
+            throw new RuntimeException(e);
+        }
 
         gamePanel = new JPanel() {
             @Override
@@ -132,12 +130,13 @@ public class Game extends JFrame implements KeyListener {
     }
 
     void draw(Graphics g) {
+        if (imageMap.get("background") != null) {
+            g.drawImage(imageMap.get("background"), 0, 0, WIDTH, HEIGHT, null);
+        }
         g.setColor(darkened(Color.green));
         g.fillRect(WIDTH / 2 - player.getHealth() / 2 - strokeLength / 2, HEIGHT / 2 - (int) player.getSize().getY() - strokeLength / 2 - 5, player.getHealth() + strokeLength, 8 + strokeLength);
         g.setColor(Color.green);
         g.fillRect(WIDTH / 2 - player.getHealth() / 2, HEIGHT / 2 - (int) player.getSize().getY() - 5, player.getHealth(), 8);
-        g.setColor(darkened(new Color(16, 72, 137)));
-        g.fillOval((int) ((double) WIDTH / 2 - player.getSize().getX() / 2) - strokeLength / 2, (int) ((double) HEIGHT / 2 - player.getSize().getY() / 2) - strokeLength / 2, (int) player.getSize().getX() + strokeLength, (int) player.getSize().getY() + strokeLength);
         g.setColor(new Color(16, 72, 137));
         Image playerImg = imageMap.get("wizardSprite");
         if (playerImg != null) {
@@ -157,6 +156,7 @@ public class Game extends JFrame implements KeyListener {
                     (int) player.getSize().getY()
             );
         }
+
 //        g.fillOval((int) (player.getTruePosition().getX()), (int) (player.getTruePosition().getY()), 20, 20);
 
         for (GameObject o : nonPlayerObjects) {
@@ -209,7 +209,7 @@ public class Game extends JFrame implements KeyListener {
         }
     }
 
-//    A neat pair of methods that handle some vector operations for drawing
+    //    A neat pair of methods that handle some vector operations for drawing
     int considerPlayerX(Vector2 input) {
         return (int) (input.getX() - player.getPosition().getX());
     }
@@ -239,8 +239,11 @@ public class Game extends JFrame implements KeyListener {
 //                o.setScreenPosition(new Vector2(o.getPosition().getX() - player.getPosition().getX(), o.getPosition().getY() - player.getPosition().getY()));
 //                Nothing yet to change its position in the world...
                 if (((Enemy) o).getShootTimer().getTime() == 0) {
-                    ((Enemy) o).act();
-                    for (Projectile p : ((Enemy) o).shootProjectile()) {
+//                    ((Enemy) o).act();
+                    ArrayList<ShootAction> actions = new ArrayList<>(((Enemy) o).getShootActions());
+                    int actionIndex = weightedDraw(actions);
+                    ShootAction action = actions.get(actionIndex);
+                    for (Projectile p : action.shootProjectile(o.getPosition())) {
                         projectiles.add(p);
                     }
                     ((Enemy) o).getShootTimer().reset();
@@ -285,6 +288,32 @@ public class Game extends JFrame implements KeyListener {
         }
     }
 
+    //    Used to take a list of actions and return only one result, based on their draw weights
+    public static int weightedDraw(ArrayList<?> input) {
+        if (input.size() == 1) return 0;
+        int output = 1;
+        ArrayList<Integer> weightRanges = new ArrayList<>();
+        int weightSum = 0;
+        for (var action : input) {
+            if (action instanceof Action) {
+                weightSum += ((Action) action).getWeight();
+                weightRanges.add(weightSum);
+            }
+        }
+
+        if (weightSum < 1) weightSum = 1;
+        int randomInt = random.nextInt(weightSum) + 1;
+
+        for (int i = 0; i < weightRanges.size(); i++) {
+            if (randomInt <= weightRanges.get(i)) {
+                output = i;
+                break;
+            }
+        }
+
+        return output;
+    }
+
     Color darkened(Color input) {
         double scale = 1.75;
         int r = (int) (input.getRed() / scale);
@@ -310,19 +339,20 @@ public class Game extends JFrame implements KeyListener {
         keyMap.put(keyCode, false);
     }
 
+
     public void mousePress(MouseEvent e) {
 //        for (int i = 0; i < random.nextInt(2) + 1; i++) {
-            Projectile projectile = new Projectile(5, new Color(0, 150, 200), true);
-            projectile.setPosition(player.getTruePosition());
-            projectile.setSize(10);
-            projectile.setVelocity(Vector2.AtoB(new Vector2(e.getX(), e.getY()), new Vector2((double) WIDTH / 2, (double) HEIGHT / 2)));
-            int inAccuracy = 20;
-            projectile.setVelocity(Vector2.add(projectile.getVelocity(), new Vector2(random.nextDouble(inAccuracy) - (double) inAccuracy / 2)));
+        Projectile projectile = new Projectile(5, new Color(0, 150, 200), true, 8, 10);
+        projectile.setPosition(player.getTruePosition());
+        projectile.setSize(10);
+        projectile.setVelocity(Vector2.AtoB(new Vector2(e.getX(), e.getY()), new Vector2((double) WIDTH / 2, (double) HEIGHT / 2)));
+        int inAccuracy = 20;
+        projectile.setVelocity(Vector2.add(projectile.getVelocity(), new Vector2(random.nextDouble(inAccuracy) - (double) inAccuracy / 2)));
 //            projectile.getVelocity().normalize(random.nextDouble(1) + 7);
-            projectile.getVelocity().normalize(12);
+        projectile.getVelocity().normalize(12);
 //            projectile.setVelocity(Vector2.add(projectile.getVelocity(), player.getVelocity()));
-            projectile.setFriendly(true);
-            projectiles.add(projectile);
+        projectile.setFriendly(true);
+        projectiles.add(projectile);
 //        }
     }
 }
